@@ -1,68 +1,44 @@
 package com.arborsoft.platform.domain;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
+import lombok.Setter;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.rest.graphdb.util.ResultConverter;
 import org.springframework.util.Assert;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.Function;
 
 @Getter
+@Setter
 public class BaseRelationship extends BaseDomain {
+    @JsonIgnore
     protected Relationship relationship;
-    protected RelationshipType type;
 
-    @JsonInclude
-    protected BaseDomain target;
-
-    public BaseRelationship(RelationshipType type) {
-        this.type = type;
+    public BaseRelationship(String relationshipType) {
+        super.put("__type__", relationshipType);
     }
 
-    public BaseRelationship(Relationship relationship, Node node) {
+    public BaseRelationship(Relationship relationship) {
         Assert.notNull(relationship, "Shadow relationship is null");
-        Assert.notNull(node, "Shadow node is null");
+        Assert.notNull(relationship.getEndNode(), "Target node is null");
 
-        this.with(relationship);
-    }
-
-    public void with(Relationship relationship) {
-        Assert.notNull(relationship, "Shadow relationship is null");
-
+        super.put("__id__", relationship.getId());
+        super.put("__type__", relationship.getType());
+        super.put("__origin__", relationship.getStartNode().getId());
+        super.put("__target__", relationship.getEndNode().getId());
         this.relationship = relationship;
-        this.type = relationship.getType();
-        this.target = new BaseNode(relationship.getEndNode());
 
-        this.set("__id__", relationship.getId());
-        this.set("__class__", BaseRelationship.class.getName());
-        this.set("target", this.target);
-
-        for (String key: relationship.getPropertyKeys()) {
-            if (key.startsWith("__")) continue;
-            this.set(key, relationship.getProperty(key));
+        for (String key: this.relationship.getPropertyKeys()) {
+            super.put(key, this.relationship.getProperty(key));
         }
     }
 
-    public BaseRelationship set(String key, Object value) {
-        Assert.notNull(key, "Key is null");
-        Assert.notNull(value, "Value is null");
-
-        this.put(key, value);
-        return this;
+    public String getType() {
+        return (String) super.get("__type__");
     }
 
-    public static ResultConverter<Map<String, Object>, BaseRelationship> converter(final String relationshipIdentifier, final String nodeIdentifier) {
-        return new ResultConverter<Map<String, Object>, BaseRelationship>() {
-            @Override
-            public BaseRelationship convert(Map<String, Object> map, Class<BaseRelationship> aClass) {
-                return new BaseRelationship((Relationship) map.get(relationshipIdentifier), (Node) map.get(nodeIdentifier));
-            }
-        };
+    public static Function<Map<String, Object>, BaseRelationship> converter(final String identifier) {
+        return (map) -> new BaseRelationship((Relationship) map.get(identifier));
     }
 }
