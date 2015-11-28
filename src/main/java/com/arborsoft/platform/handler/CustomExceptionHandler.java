@@ -29,6 +29,7 @@ public class CustomExceptionHandler {
 
         Map<String, Object> body = new HashMap<>();
         body.put("uri", request.getRequestURI());
+        body.put("class", throwable.getClass());
         body.put("message", throwable.getMessage());
         body.put("throwable", throwable);
 
@@ -38,13 +39,14 @@ public class CustomExceptionHandler {
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
-    public ResponseEntity<?> handle(HttpServletRequest request, NoHandlerFoundException noHandlerFoundException) {
-        LOG.error(noHandlerFoundException.getMessage(), noHandlerFoundException);
+    public ResponseEntity<?> handle(HttpServletRequest request, NoHandlerFoundException exception) {
+        LOG.error(exception.getMessage(), exception);
 
         Map<String, Object> body = new HashMap<>();
         body.put("uri", request.getRequestURI());
-        body.put("message", noHandlerFoundException.getMessage());
-        body.put("throwable", noHandlerFoundException);
+        body.put("class", exception.getClass());
+        body.put("message", exception.getMessage());
+        body.put("throwable", exception);
 
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }

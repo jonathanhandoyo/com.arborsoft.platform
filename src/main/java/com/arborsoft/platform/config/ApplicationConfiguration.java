@@ -8,11 +8,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import springfox.documentation.service.ApiInfo;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @Configuration
 @ComponentScan(basePackages = {"com.arborsoft.platform"})
+@EnableSwagger2
 @EnableWebMvc
-public class ApplicationConfiguration {
+public class ApplicationConfiguration extends WebMvcConfigurerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationConfiguration.class);
 
     private RestGraphDatabase database;
@@ -36,5 +43,19 @@ public class ApplicationConfiguration {
         }
         LOG.info(">> neo4j cypher engine");
         return this.engine;
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("swagger-ui.html")
+                .addResourceLocations("classpath:/META-INF/resources/");
+
+        registry.addResourceHandler("/webjars/**")
+                .addResourceLocations("classpath:/META-INF/resources/webjars/");
+    }
+
+    @Bean
+    public Docket petApi() {
+        return new Docket(DocumentationType.SWAGGER_2).apiInfo(new ApiInfo("Platform", null, "1.0-SNAPSHOT", null, "\nJonathan Handoyo <jonathan.handoyo@gmail.com>,\nArnold Palar <arnold.palar@gmail.com>", null, null));
     }
 }
