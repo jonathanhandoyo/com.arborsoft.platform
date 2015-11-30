@@ -2,9 +2,7 @@ package com.arborsoft.platform.service;
 
 import com.arborsoft.platform.domain.BaseNode;
 import com.arborsoft.platform.domain.BaseRelationship;
-import com.arborsoft.platform.domain.Metadata;
 import com.arborsoft.platform.exception.DatabaseOperationException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.cypherdsl.CypherQuery;
 import org.neo4j.cypherdsl.grammar.Execute;
@@ -17,14 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static com.arborsoft.platform.util.CustomCypher.parameter;
-import static org.apache.commons.lang3.tuple.Pair.*;
-import static org.neo4j.cypherdsl.CypherQuery.*;
 import static com.arborsoft.platform.util.CustomCypher.toPropertyValues;
+import static org.neo4j.cypherdsl.CypherQuery.*;
 
 @Service
 public class Neo4jService {
@@ -54,138 +52,20 @@ public class Neo4jService {
         return StreamSupport.stream(this.database.getRelationshipTypes().spliterator(), false).collect(Collectors.toSet());
     }
 
-    public Set<Metadata> getAllMetadata() throws DatabaseOperationException {
-        try {
-            Execute query = CypherQuery
-                    .match(node("metadata").label("Metadata"))
-                    .returns(identifier("metadata"));
-
-            return StreamSupport.stream(this.engine.query(query.toString(), null).spliterator(), false).map(Metadata.converter("metadata")).collect(Collectors.toSet());
-        } catch (Exception exception) {
-            LOG.error(exception.getMessage(), exception);
-            throw new DatabaseOperationException(exception.getMessage(), exception);
-        }
-    }
-
-    public Metadata save(Metadata metadata) throws DatabaseOperationException {
-        try {
-            Assert.notNull(metadata, "Metadata is null");
-
-            Node _node = (metadata.getId() != null ? this.database.getNodeById(metadata.getId()) : null);
-            if (_node == null) {
-                _node = this.database.createNode(DynamicLabel.label("Metadata"));
-                Assert.notNull(_node, "Unable to create node");
-                Assert.notNull(_node.getId(), "Unable to create node");
-            }
-
-            _node.setProperty("label", metadata.getLabel());
-            _node.setProperty("keys", metadata.getKeys());
-
-            metadata.setId(_node.getId());
-
-            return metadata;
-        } catch (Exception exception) {
-            LOG.error(exception.getMessage(), exception);
-            throw new DatabaseOperationException(exception.getMessage(), exception);
-        }
-    }
-
-    public Metadata register(Label label, String... keys) throws DatabaseOperationException {
-        try {
-            return this.register(label, Arrays.asList(keys).stream().collect(Collectors.toSet()));
-        } catch (Exception exception) {
-            LOG.error(exception.getMessage(), exception);
-            throw new DatabaseOperationException(exception.getMessage(), exception);
-        }
-    }
-
-    public Metadata register(Label label, Set<String> keys) throws DatabaseOperationException {
-        try {
-            Assert.notEmpty(keys, "No key(s)");
-
-            Metadata metadata = this.getMetadata(label);
-
-            if (metadata == null) {
-                metadata = new Metadata();
-                metadata.setLabel(label.name());
-                metadata.setKeys(keys.stream().filter(it -> !it.startsWith("__")).toArray(String[]::new));
-            } else {
-                Set<String> distinct = Arrays.asList(metadata.getKeys()).stream().collect(Collectors.toSet());
-                distinct.addAll(keys.stream().filter(it -> !it.startsWith("__")).collect(Collectors.toSet()));
-
-                metadata.setKeys(distinct.toArray(new String[distinct.size()]));
-            }
-
-            return this.save(metadata);
-        } catch (Exception exception) {
-            LOG.error(exception.getMessage(), exception);
-            throw new DatabaseOperationException(exception.getMessage(), exception);
-        }
-    }
-
-    public Metadata register(RelationshipType type, String... keys) throws DatabaseOperationException {
-        try {
-            return this.register(type, Arrays.asList(keys).stream().collect(Collectors.toSet()));
-        } catch (Exception exception) {
-            LOG.error(exception.getMessage(), exception);
-            throw new DatabaseOperationException(exception.getMessage(), exception);
-        }
-    }
-
-    public Metadata register(RelationshipType type, Set<String> keys) throws DatabaseOperationException {
-        try {
-            Assert.notEmpty(keys, "No key(s)");
-
-            Metadata metadata = this.getMetadata(type);
-
-            if (metadata == null) {
-                metadata = new Metadata();
-                metadata.setType(type.name());
-                metadata.setKeys(keys.stream().filter(it -> !it.startsWith("__")).toArray(String[]::new));
-            } else {
-                Set<String> distinct = Arrays.asList(metadata.getKeys()).stream().collect(Collectors.toSet());
-                distinct.addAll(keys.stream().filter(it -> !it.startsWith("__")).collect(Collectors.toSet()));
-
-                metadata.setKeys(distinct.toArray(new String[distinct.size()]));
-            }
-
-            return this.save(metadata);
-        } catch (Exception exception) {
-            LOG.error(exception.getMessage(), exception);
-            throw new DatabaseOperationException(exception.getMessage(), exception);
-        }
-    }
-
-    public Metadata getMetadata(Label label) throws DatabaseOperationException {
+    public Set<String> getKeys(Label label) throws DatabaseOperationException {
         try {
             Assert.notNull(label, "Label is null");
-
-            Map<String, Object> param = new HashMap<>();
-
-            Execute query = CypherQuery
-                    .match(node("metadata").label("Metadata"))
-                    .where(identifier("metadata").property("label").eq(parameter(param, of("label", label.name()))))
-                    .returns(identifier("metadata"));
-
-            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(Metadata.converter("metadata")).findFirst().orElse(null);
+            return StreamSupport.stream(this.engine.query("match (n:" + label.name() + ") unwind keys(n) as key with key where not key =~ \"__.*\" return distinct key", null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
         }
     }
 
-    public Metadata getMetadata(RelationshipType type) throws DatabaseOperationException {
+    public Set<String> getKeys(RelationshipType type) throws DatabaseOperationException {
         try {
-            Assert.notNull(type, "RelationshipType is null");
-
-            Map<String, Object> param = new HashMap<>();
-
-            Execute query = CypherQuery
-                    .match(node("metadata").label("Metadata"))
-                    .where(identifier("metadata").property("type").eq(parameter(param, of("type", type.name()))))
-                    .returns(identifier("metadata"));
-
-            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(Metadata.converter("metadata")).findFirst().orElse(null);
+            Assert.notNull(type, "Label is null");
+            return StreamSupport.stream(this.engine.query("match () -[r:" + type.name() + "]- () unwind keys(r) as key with key where not key =~ \"__.*\" return distinct key", null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
