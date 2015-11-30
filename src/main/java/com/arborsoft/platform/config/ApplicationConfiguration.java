@@ -1,5 +1,6 @@
 package com.arborsoft.platform.config;
 
+import com.arborsoft.platform.aspect.RegistrationAspect;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 import org.neo4j.rest.graphdb.query.RestCypherQueryEngine;
 import org.slf4j.Logger;
@@ -45,6 +46,13 @@ public class ApplicationConfiguration extends WebMvcConfigurerAdapter {
         return this.engine;
     }
 
+    @Bean
+    public RegistrationAspect registrationAspect() {
+        RegistrationAspect aspect = new RegistrationAspect();
+        LOG.info(">> aspect @ " + aspect.getClass().getCanonicalName());
+        return aspect;
+    }
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("swagger-ui.html")
@@ -55,7 +63,7 @@ public class ApplicationConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public Docket petApi() {
+    public Docket docket() {
         return new Docket(DocumentationType.SWAGGER_2).apiInfo(new ApiInfo("Platform", null, "1.0-SNAPSHOT", null, "\nJonathan Handoyo <jonathan.handoyo@gmail.com>,\nArnold Palar <arnold.palar@gmail.com>", null, null));
     }
 }

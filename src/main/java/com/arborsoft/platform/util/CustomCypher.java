@@ -1,6 +1,7 @@
 package com.arborsoft.platform.util;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.neo4j.cypherdsl.expression.Expression;
 import org.neo4j.cypherdsl.query.PropertyValue;
 
 import java.util.ArrayList;
@@ -11,6 +12,15 @@ import static org.neo4j.cypherdsl.CypherQuery.param;
 import static org.neo4j.cypherdsl.CypherQuery.value;
 
 public class CustomCypher {
+    public static Expression parameter(Map<String, Object> param, Pair<String, Object> pair) {
+        if (pair.getKey() != null && pair.getValue() != null) {
+            param.put(pair.getKey(), pair.getValue());
+            return param(pair.getKey());
+        }
+
+        return null;
+    }
+
     public static PropertyValue[] toPropertyValues(Map<String, Object> param, Pair<String, Object>... pairs) {
         if (pairs.length > 0) {
             List<PropertyValue> values = new ArrayList<>();
