@@ -1,10 +1,12 @@
 package com.arborsoft.platform.config;
 
 import com.arborsoft.platform.aspect.RegistrationAspect;
+import lombok.Getter;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 import org.neo4j.rest.graphdb.query.RestCypherQueryEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +27,34 @@ public class ApplicationConfiguration extends WebMvcConfigurerAdapter {
 
     private RestGraphDatabase database;
     private RestCypherQueryEngine engine;
+
+    @Getter
+    @Value(value = "${app.title}")
+    private String appTitle;
+
+    @Getter
+    @Value(value = "${app.description}")
+    private String appDescription;
+
+    @Getter
+    @Value(value = "${app.version}")
+    private String appVersion;
+
+    @Getter
+    @Value(value = "${app.termsOfServiceUrl}")
+    private String appTermsOfServiceUrl;
+
+    @Getter
+    @Value(value = "${app.contact}")
+    private String appContact;
+
+    @Getter
+    @Value(value = "${app.license}")
+    private String appLicense;
+
+    @Getter
+    @Value(value = "${app.licenseUrl}")
+    private String appLicenseUrl;
 
     @Bean
     public RestGraphDatabase database() {
@@ -64,6 +94,20 @@ public class ApplicationConfiguration extends WebMvcConfigurerAdapter {
 
     @Bean
     public Docket docket() {
-        return new Docket(DocumentationType.SWAGGER_2).apiInfo(new ApiInfo("Platform", null, "1.0-SNAPSHOT", null, "\nJonathan Handoyo <jonathan.handoyo@gmail.com>,\nArnold Palar <arnold.palar@gmail.com>", null, null));
+        return new Docket(DocumentationType.SWAGGER_2)
+                .apiInfo(
+                        new ApiInfo(
+                                this.appTitle,
+                                this.appDescription,
+                                this.appVersion,
+                                this.appTermsOfServiceUrl,
+                                this.appContact,
+                                this.appLicense,
+                                this.appLicenseUrl
+                        )
+                )
+        ;
     }
+
+
 }

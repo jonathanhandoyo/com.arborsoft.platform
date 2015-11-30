@@ -1,5 +1,8 @@
 package com.arborsoft.platform.handler;
 
+import com.arborsoft.platform.exception.DatabaseOperationException;
+import com.arborsoft.platform.exception.ObjectNotFoundException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -31,13 +34,28 @@ public class CustomExceptionHandler {
         body.put("uri", request.getRequestURI());
         body.put("class", throwable.getClass());
         body.put("message", throwable.getMessage());
-        body.put("throwable", throwable);
+        body.put("throwable", ExceptionUtils.getStackFrames(throwable));
+
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(DatabaseOperationException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseBody
+    public ResponseEntity<?> handle(HttpServletRequest request, DatabaseOperationException exception) {
+        LOG.error(exception.getMessage(), exception);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("uri", request.getRequestURI());
+        body.put("class", exception.getClass());
+        body.put("message", exception.getMessage());
+        body.put("exception", ExceptionUtils.getStackFrames(exception));
 
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ResponseBody
     public ResponseEntity<?> handle(HttpServletRequest request, NoHandlerFoundException exception) {
         LOG.error(exception.getMessage(), exception);
@@ -46,7 +64,22 @@ public class CustomExceptionHandler {
         body.put("uri", request.getRequestURI());
         body.put("class", exception.getClass());
         body.put("message", exception.getMessage());
-        body.put("throwable", exception);
+        body.put("exception", ExceptionUtils.getStackFrames(exception));
+
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ObjectNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public ResponseEntity<?> handle(HttpServletRequest request, ObjectNotFoundException exception) {
+        LOG.error(exception.getMessage(), exception);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("uri", request.getRequestURI());
+        body.put("class", exception.getClass());
+        body.put("message", exception.getMessage());
+        body.put("exception", ExceptionUtils.getStackFrames(exception));
 
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }

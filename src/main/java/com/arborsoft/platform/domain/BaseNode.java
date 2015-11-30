@@ -35,7 +35,8 @@ public class BaseNode extends BaseDomain {
         this.node = node;
 
         for (String key: this.node.getPropertyKeys()) {
-            this.set(key, this.node.getProperty(key));
+            if (key.startsWith("__")) continue;
+            super.set(key, this.node.getProperty(key));
         }
     }
 

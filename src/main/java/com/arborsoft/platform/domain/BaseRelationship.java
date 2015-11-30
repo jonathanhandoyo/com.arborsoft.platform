@@ -30,6 +30,7 @@ public class BaseRelationship extends BaseDomain {
         this.relationship = relationship;
 
         for (String key: this.relationship.getPropertyKeys()) {
+            if (key.startsWith("__")) continue;
             super.put(key, this.relationship.getProperty(key));
         }
     }
