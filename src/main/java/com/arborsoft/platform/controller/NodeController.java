@@ -35,7 +35,9 @@ public class NodeController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public BaseNode get(
-            @ApiParam(name = "id") @RequestParam Long id
+            @ApiParam(name = "id")
+            @RequestParam
+            Long id
     ) throws Exception {
         BaseNode node = this.neo4j.get(id);
 
@@ -51,8 +53,14 @@ public class NodeController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public Set<BaseNode> get(
-            @ApiParam(name = "label", required = false) @PathVariable String label,
-            @ApiParam(name = "parameters", required = false) @RequestParam(required = false) HashMap<String, Object> parameters
+            @ApiParam(name = "label", required = false, value = "Label")
+            @PathVariable
+            String label,
+
+            @ApiParam(name = "parameters", required = false, value = "Dynamic key-value pairs<br>Not testable via Swagger<br>Spring managed only")
+            @RequestParam(required = false)
+            HashMap<String, Object> parameters
+
     ) throws Exception {
         Set<BaseNode> nodes = this.neo4j.get(label, unwind(parameters));
 
