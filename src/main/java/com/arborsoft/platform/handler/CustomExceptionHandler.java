@@ -29,14 +29,7 @@ public class CustomExceptionHandler {
     @ResponseBody
     public ResponseEntity<?> handle(HttpServletRequest request, Throwable throwable) {
         LOG.error(throwable.getMessage(), throwable);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("uri", request.getRequestURI());
-        body.put("class", throwable.getClass());
-        body.put("message", throwable.getMessage());
-        body.put("throwable", ExceptionUtils.getStackFrames(throwable));
-
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(this.getThrowableInfo(request, throwable), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(DatabaseOperationException.class)
@@ -44,14 +37,7 @@ public class CustomExceptionHandler {
     @ResponseBody
     public ResponseEntity<?> handle(HttpServletRequest request, DatabaseOperationException exception) {
         LOG.error(exception.getMessage(), exception);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("uri", request.getRequestURI());
-        body.put("class", exception.getClass());
-        body.put("message", exception.getMessage());
-        body.put("exception", ExceptionUtils.getStackFrames(exception));
-
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(this.getThrowableInfo(request, exception), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
@@ -59,14 +45,7 @@ public class CustomExceptionHandler {
     @ResponseBody
     public ResponseEntity<?> handle(HttpServletRequest request, NoHandlerFoundException exception) {
         LOG.error(exception.getMessage(), exception);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("uri", request.getRequestURI());
-        body.put("class", exception.getClass());
-        body.put("message", exception.getMessage());
-        body.put("exception", ExceptionUtils.getStackFrames(exception));
-
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(this.getThrowableInfo(request, exception), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ObjectNotFoundException.class)
@@ -74,13 +53,15 @@ public class CustomExceptionHandler {
     @ResponseBody
     public ResponseEntity<?> handle(HttpServletRequest request, ObjectNotFoundException exception) {
         LOG.error(exception.getMessage(), exception);
+        return new ResponseEntity<>(this.getThrowableInfo(request, exception), HttpStatus.NOT_FOUND);
+    }
 
+    private <T extends Throwable> Map<String, Object> getThrowableInfo(HttpServletRequest request, T throwable) {
         Map<String, Object> body = new HashMap<>();
         body.put("uri", request.getRequestURI());
-        body.put("class", exception.getClass());
-        body.put("message", exception.getMessage());
-        body.put("exception", ExceptionUtils.getStackFrames(exception));
-
-        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+        body.put("class", throwable.getClass());
+        body.put("message", throwable.getMessage());
+        body.put("throwable", ExceptionUtils.getStackFrames(throwable));
+        return body;
     }
 }

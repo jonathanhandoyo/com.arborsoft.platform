@@ -26,8 +26,6 @@ import static com.arborsoft.platform.util.CustomCollection.unwind;
 @RequestMapping("/nodes")
 @ResponseBody
 public class NodeController {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeController.class);
-
     @Autowired
     protected Neo4jService neo4j;
 
@@ -50,17 +48,13 @@ public class NodeController {
             @ApiParam(name = "parameters", required = true, value = "Dynamic key-value pairs<br>Not testable via Swagger<br>Spring managed only")
             @RequestParam(required = false)
             HashMap<String, Object> parameters
-
     ) throws Exception {
         if (NumberUtils.isNumber(filter)) {
-
             Long id = NumberUtils.createLong(filter);
             BaseNode node = this.neo4j.get(id);
             if (node == null) throw new ObjectNotFoundException("id:" + id);
-
             return Collections.singletonList(node).stream().collect(Collectors.toSet());
         } else {
-
             Set<BaseNode> nodes = this.neo4j.get(filter, unwind(parameters));
             if (nodes == null || nodes.isEmpty()) throw new ObjectNotFoundException(new ObjectMapper().writer().writeValueAsString(parameters));
             return nodes;
@@ -82,9 +76,7 @@ public class NodeController {
             Long id
     ) throws Exception {
         BaseNode node = this.neo4j.get(id);
-
         if (node == null) throw new ObjectNotFoundException("id:" + id);
-
         this.neo4j.delete(node);
     }
 }

@@ -1,11 +1,18 @@
 package com.arborsoft.platform;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.web.SpringBootServletInitializer;
+import org.springframework.core.env.Environment;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 @SpringBootApplication
 public class Application extends SpringBootServletInitializer {
+    private static final Logger log = LoggerFactory.getLogger(Application.class);
 
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
@@ -50,7 +57,23 @@ public class Application extends SpringBootServletInitializer {
                 .sources(Application.class);
     }
 
-    public static void main(String[] args) {
-        new Application().configure(new SpringApplicationBuilder(Application.class)).run(args);
+    public static void main(String[] args) throws Exception {
+        SpringApplicationBuilder app = new Application().configure(new SpringApplicationBuilder(Application.class));
+        Environment env = app.run(args).getEnvironment();
+        log.info("\n" +
+                        "Access URLs:\n" +
+                        "----------------------------------------------------------\n" +
+                        "\tExternal: \thttp://{}:{}\n" +
+                        "\tInternal: \thttp://localhost:{}\n\n" +
+                        "\tSwagger : \thttp://{}:{}/swagger-ui.html\n" +
+                        "\tSwagger : \thttp://localhost:{}/swagger-ui.html\n" +
+                        "----------------------------------------------------------",
+                new String[] {
+                        InetAddress.getLocalHost().getHostAddress(), env.getProperty("server.port"),
+                        env.getProperty("server.port"),
+                        InetAddress.getLocalHost().getHostAddress(), env.getProperty("server.port"),
+                        env.getProperty("server.port")
+                }
+        );
     }
 }
