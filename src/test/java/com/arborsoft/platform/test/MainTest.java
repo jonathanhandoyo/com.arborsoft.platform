@@ -38,17 +38,19 @@ public class MainTest {
     @Test
     public void test1() throws Exception {
         BaseNode one = new BaseNode();
-        one.addLabel("Label-A");
-        one.addLabel("Label-B");
-        one.set("key-A", "value-A");
-        one.set("key-B", "value-B");
+        one.addLabel("LabelA");
+        one.addLabel("LabelB");
+        one.set("keyA", "valueA");
+        one.set("keyB", "valueB");
         one = this.neo4j.save(one);
 
-        BaseNode two = new BaseNode();
-        two.addLabel("Label-B");
-        two.addLabel("Label-C");
-        two.set("key-B", "value-B");
-        two.set("key-C", "value-C");
-        two = this.neo4j.save(two);
+        System.out.println(one);
+
+//        BaseNode two = new BaseNode();
+//        two.addLabel("Label-B");
+//        two.addLabel("Label-C");
+//        two.set("key-B", "value-B");
+//        two.set("key-C", "value-C");
+//        two = this.neo4j.save(two);
     }
 }

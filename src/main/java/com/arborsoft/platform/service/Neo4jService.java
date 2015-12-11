@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,34 +45,6 @@ public class Neo4jService {
         }
     }
 
-    public Set<Label> labels() {
-        return this.database.getAllLabelNames().stream().map(it -> DynamicLabel.label(it)).collect(Collectors.toSet());
-    }
-
-    public Set<RelationshipType> relationships() {
-        return StreamSupport.stream(this.database.getRelationshipTypes().spliterator(), false).collect(Collectors.toSet());
-    }
-
-    public Set<String> getKeys(Label label) throws DatabaseOperationException {
-        try {
-            Assert.notNull(label, "Label is null");
-            return StreamSupport.stream(this.engine.query("match (n:" + label.name() + ") unwind keys(n) as key with key where not key =~ \"__.*\" return distinct key", null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
-        } catch (Exception exception) {
-            LOG.error(exception.getMessage(), exception);
-            throw new DatabaseOperationException(exception.getMessage(), exception);
-        }
-    }
-
-    public Set<String> getKeys(RelationshipType type) throws DatabaseOperationException {
-        try {
-            Assert.notNull(type, "Label is null");
-            return StreamSupport.stream(this.engine.query("match () -[r:" + type.name() + "]- () unwind keys(r) as key with key where not key =~ \"__.*\" return distinct key", null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
-        } catch (Exception exception) {
-            LOG.error(exception.getMessage(), exception);
-            throw new DatabaseOperationException(exception.getMessage(), exception);
-        }
-    }
-
     public BaseNode save(BaseNode node) throws DatabaseOperationException {
         try {
             Assert.notNull(node, "BaseNode is null");
@@ -83,12 +56,16 @@ public class Neo4jService {
                 Assert.notNull(_node.getId(), "Unable to create node");
             }
 
-            for (String key: _node.getPropertyKeys()) {
-                _node.removeProperty(key);
-            }
+            Set<String> existings = new HashSet<>();
+            _node.getPropertyKeys().forEach(it -> existings.add(it));
 
             for (String key: node.keySet()) {
                 _node.setProperty(key, node.get(key));
+                existings.remove(key);
+            }
+
+            for (String key: existings) {
+                _node.removeProperty(key);
             }
 
             node.setNode(_node);
@@ -190,4 +167,56 @@ public class Neo4jService {
             throw new DatabaseOperationException(exception.getMessage(), exception);
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public Set<Label> getLabels() {
+        return this.database.getAllLabelNames().stream().map(it -> DynamicLabel.label(it)).collect(Collectors.toSet());
+    }
+
+    public Set<RelationshipType> getRelationshipTypes() {
+        return StreamSupport.stream(this.database.getRelationshipTypes().spliterator(), false).collect(Collectors.toSet());
+    }
+
+    public Set<String> getKeys(Label label) throws DatabaseOperationException {
+        try {
+            Assert.notNull(label, "Label is null");
+            return StreamSupport.stream(this.engine.query("match (n:" + label.name() + ") unwind keys(n) as key with key where not key =~ \"__.*\" return distinct key", null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
+        } catch (Exception exception) {
+            LOG.error(exception.getMessage(), exception);
+            throw new DatabaseOperationException(exception.getMessage(), exception);
+        }
+    }
+
+    public Set<String> getKeys(RelationshipType type) throws DatabaseOperationException {
+        try {
+            Assert.notNull(type, "Label is null");
+            return StreamSupport.stream(this.engine.query("match () -[r:" + type.name() + "]- () unwind keys(r) as key with key where not key =~ \"__.*\" return distinct key", null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
+        } catch (Exception exception) {
+            LOG.error(exception.getMessage(), exception);
+            throw new DatabaseOperationException(exception.getMessage(), exception);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 }

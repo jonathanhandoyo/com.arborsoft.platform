@@ -28,6 +28,31 @@ public class CustomExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
     public ResponseEntity<?> handle(HttpServletRequest request, Throwable throwable) {
+        return new ResponseEntity<>(this.map(request, throwable), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(DatabaseOperationException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseBody
+    public ResponseEntity<?> handle(HttpServletRequest request, DatabaseOperationException exception) {
+        return new ResponseEntity<>(this.map(request, exception), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ResponseEntity<?> handle(HttpServletRequest request, NoHandlerFoundException exception) {
+        return new ResponseEntity<>(this.map(request, exception), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ObjectNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public ResponseEntity<?> handle(HttpServletRequest request, ObjectNotFoundException exception) {
+        return new ResponseEntity<>(this.map(request, exception), HttpStatus.NOT_FOUND);
+    }
+
+    private Map<String, Object> map(HttpServletRequest request, Throwable throwable) {
         LOG.error(throwable.getMessage(), throwable);
 
         Map<String, Object> body = new HashMap<>();
@@ -36,51 +61,6 @@ public class CustomExceptionHandler {
         body.put("message", throwable.getMessage());
         body.put("throwable", ExceptionUtils.getStackFrames(throwable));
 
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @ExceptionHandler(DatabaseOperationException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ResponseBody
-    public ResponseEntity<?> handle(HttpServletRequest request, DatabaseOperationException exception) {
-        LOG.error(exception.getMessage(), exception);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("uri", request.getRequestURI());
-        body.put("class", exception.getClass());
-        body.put("message", exception.getMessage());
-        body.put("exception", ExceptionUtils.getStackFrames(exception));
-
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @ExceptionHandler(NoHandlerFoundException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ResponseBody
-    public ResponseEntity<?> handle(HttpServletRequest request, NoHandlerFoundException exception) {
-        LOG.error(exception.getMessage(), exception);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("uri", request.getRequestURI());
-        body.put("class", exception.getClass());
-        body.put("message", exception.getMessage());
-        body.put("exception", ExceptionUtils.getStackFrames(exception));
-
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(ObjectNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ResponseBody
-    public ResponseEntity<?> handle(HttpServletRequest request, ObjectNotFoundException exception) {
-        LOG.error(exception.getMessage(), exception);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("uri", request.getRequestURI());
-        body.put("class", exception.getClass());
-        body.put("message", exception.getMessage());
-        body.put("exception", ExceptionUtils.getStackFrames(exception));
-
-        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+        return body;
     }
 }
