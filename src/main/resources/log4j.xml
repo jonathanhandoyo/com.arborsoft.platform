@@ -19,8 +19,10 @@
     </appender>
 
     <!-- 3rdparty Loggers -->
-    <logger name="org.springframework"><level value="warn"/></logger>
+    <logger name="org.apache.catalina"><level value="warn"/></logger>
     <logger name="org.neo4j"><level value="warn"/></logger>
+    <logger name="org.springframework"><level value="warn"/></logger>
+    <logger name="springfox"><level value="warn"/></logger>
 
     <!-- application loggers -->
     <logger name="com.arborsoft.platform"><level value="info"/></logger>
