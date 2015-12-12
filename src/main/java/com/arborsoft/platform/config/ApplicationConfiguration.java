@@ -108,6 +108,4 @@ public class ApplicationConfiguration extends WebMvcConfigurerAdapter {
                 )
         ;
     }
-
-
 }

@@ -1,122 +1,126 @@
 package com.arborsoft.platform.controller;
 
 import com.arborsoft.platform.domain.BaseNode;
-import com.arborsoft.platform.exception.ObjectNotFoundException;
 import com.arborsoft.platform.service.Neo4jService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.arborsoft.platform.util.CustomCollection.unwind;
 
 @Api(value = "Node Controller")
 @RestController
-@RequestMapping("/nodes")
+@RequestMapping("/rest")
 @ResponseBody
 public class NodeController {
 
     @Autowired
     protected Neo4jService neo4j;
 
-    @ApiOperation(
-            value = "Get Node(s) by Parameter",
-            notes = "",
-            response = BaseNode.class,
-            responseContainer = "Set"
-    )
+    @ApiOperation(value = "Get Node by ID")
     @RequestMapping(
-            value = "/{idOrLabel}",
+            value = "/id:{id}",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public Set<BaseNode> get(
-            @ApiParam(name = "idOrLabel", required = true, value = "ID or Label")
-            @PathVariable
-            String idOrLabel,
-
-            @ApiParam(name = "parameters", required = true, value = "Dynamic key-value pairs<br>Not testable via Swagger<br>Spring managed only")
-            @RequestParam(required = false)
-            HashMap<String, Object> parameters
-
-    ) throws Exception {
-        if (NumberUtils.isNumber(idOrLabel)) {
-
-            Long id = NumberUtils.createLong(idOrLabel);
-            BaseNode node = this.neo4j.get(id);
-            if (node == null) throw new ObjectNotFoundException("id:" + id);
-
-            return Collections.singletonList(node).stream().collect(Collectors.toSet());
-        } else {
-
-            Set<BaseNode> nodes = this.neo4j.get(idOrLabel, unwind(parameters));
-            if (nodes == null || nodes.isEmpty()) throw new ObjectNotFoundException(new ObjectMapper().writer().writeValueAsString(parameters));
-            return nodes;
-        }
+    public ResponseEntity<BaseNode> get(@PathVariable Long id) throws Exception {
+        BaseNode node = this.neo4j.get(id);
+        return new ResponseEntity<>(node, HttpStatus.OK);
     }
 
-    @ApiOperation(
-            value = "Get Node(s) by Parameter",
-            notes = "",
-            response = BaseNode.class,
-            responseContainer = "Set"
-    )
+    @ApiOperation(value = "Update Node by ID")
     @RequestMapping(
-            value = "/{filter}",
-            method = RequestMethod.GET,
-            produces = MediaType.APPLICATION_JSON_VALUE
+            value = "/id:{id}",
+            method = RequestMethod.PUT,
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public Set<BaseNode> get(
-            @ApiParam(name = "filter", required = true, value = "ID or Label")
-            @PathVariable
-            String filter,
+    public ResponseEntity<BaseNode> put(@PathVariable Long id, @RequestBody Map<String, Object> body) throws Exception {
+        BaseNode node = this.neo4j.get(id);
+        if (node == null) return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
 
-            @ApiParam(name = "key", required = true, value = "Key of the filter")
-            @RequestParam(required = false)
-            String key,
+        this.copy(node, body, false);
 
-            @ApiParam(name = "value", required = true, value = "Value of the filter")
-            @RequestParam(required = false)
-            String value
-    ) throws Exception {
-        if (NumberUtils.isNumber(filter)) {
-            Long id = NumberUtils.createLong(filter);
-            BaseNode node = this.neo4j.get(id);
-            if (node == null) throw new ObjectNotFoundException("id:" + id);
-            return Collections.singletonList(node).stream().collect(Collectors.toSet());
-        } else {
-            Set<BaseNode> nodes = this.neo4j.get(filter, Pair.of(key, value));
-            if (nodes == null || nodes.isEmpty()) throw new ObjectNotFoundException(new ObjectMapper().writer().writeValueAsString(Pair.of(key, value)));
-            return nodes;
-        }
+        this.neo4j.save(node);
+        return new ResponseEntity<>(node, HttpStatus.OK);
     }
 
-    @ApiOperation(
-            value = "Delete Node",
-            notes = "",
-            response = Void.class
-    )
+    @ApiOperation(value = "Create Node with Label")
     @RequestMapping(
-            value = "/{id}",
+            value = "/{label}",
+            method = RequestMethod.POST,
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<BaseNode> post(@PathVariable String label, @RequestBody Map<String, Object> body) throws Exception {
+        Assert.notEmpty(body, "Request Body is empty");
+
+        BaseNode node = null;
+        if (body.containsKey("__id__")) {
+            Long id = (Long) body.get("__id__");
+            node = this.neo4j.get(id);
+
+            if (node == null) {
+                node = new BaseNode();
+                body.remove("__id__");
+            }
+        }
+
+        node = (node == null) ? new BaseNode() : node;
+        node = this.copy(node, body, true);
+
+        node.addLabel(label);
+        this.neo4j.save(node);
+        return new ResponseEntity<>(node, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Delete Node by ID")
+    @RequestMapping(
+            value = "/id:{id}",
             method = RequestMethod.DELETE
     )
-    public void delete(
-            @ApiParam(name = "id", required = true, value = "ID")
-            @PathVariable
-            Long id
-    ) throws Exception {
+    public ResponseEntity<?> delete(@PathVariable Long id) throws Exception {
         BaseNode node = this.neo4j.get(id);
-        if (node == null) throw new ObjectNotFoundException("id:" + id);
+
         this.neo4j.delete(node);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Get Node(s) by Parameter", responseContainer = "Set")
+    @RequestMapping(
+            value = "/{label}",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> find(@PathVariable String label, @RequestParam String json) throws Exception {
+        Map<String, Object> map = new ObjectMapper().readerFor(new TypeReference<Map<String, Object>>() {}).readValue(json);
+
+        Set<BaseNode> nodes = this.neo4j.get(label, unwind(map));
+        return new ResponseEntity<>(nodes, HttpStatus.OK);
+    }
+
+    private BaseNode copy(BaseNode node, Map<String, Object> map, boolean wipe) {
+        if (wipe) {
+            for (String key: node.keySet()) {
+                if (key.startsWith("__")) continue;
+                node.remove(key);
+            }
+        }
+
+        for (String key: map.keySet()) {
+            node.set(key, map.get(key));
+        }
+
+        return node;
     }
 }

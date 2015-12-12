@@ -168,18 +168,6 @@ public class Neo4jService {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     public Set<Label> getLabels() {
         return this.database.getAllLabelNames().stream().map(it -> DynamicLabel.label(it)).collect(Collectors.toSet());
     }
@@ -191,7 +179,14 @@ public class Neo4jService {
     public Set<String> getKeys(Label label) throws DatabaseOperationException {
         try {
             Assert.notNull(label, "Label is null");
-            return StreamSupport.stream(this.engine.query("match (n:" + label.name() + ") unwind keys(n) as key with key where not key =~ \"__.*\" return distinct key", null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
+
+            String query =
+                    "  MATCH (n:" + label.name() + ") " +
+                    " UNWIND keys(n) AS key " +
+                    "   WITH key " +
+                    "  WHERE NOT key =~ \"__.*\" " +
+                    " RETURN DISTINCT key;";
+            return StreamSupport.stream(this.engine.query(query, null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -201,7 +196,14 @@ public class Neo4jService {
     public Set<String> getKeys(RelationshipType type) throws DatabaseOperationException {
         try {
             Assert.notNull(type, "Label is null");
-            return StreamSupport.stream(this.engine.query("match () -[r:" + type.name() + "]- () unwind keys(r) as key with key where not key =~ \"__.*\" return distinct key", null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
+
+            String query =
+                    "  MATCH () -[r:" + type.name() + "]- () " +
+                    " UNWIND keys(r) AS key " +
+                    "   WITH key " +
+                    "  WHERE NOT key =~ \"__.*\" " +
+                    " RETURN DISTINCY key;";
+            return StreamSupport.stream(this.engine.query(query, null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
