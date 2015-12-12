@@ -38,30 +38,31 @@ public class NodeController {
             responseContainer = "Set"
     )
     @RequestMapping(
-            value = "/{filter}",
+            value = "/{idOrLabel}",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public Set<BaseNode> get(
-            @ApiParam(name = "filter", required = true, value = "ID or Label")
+            @ApiParam(name = "idOrLabel", required = true, value = "ID or Label")
             @PathVariable
-            String filter,
+            String idOrLabel,
 
             @ApiParam(name = "parameters", required = true, value = "Dynamic key-value pairs<br>Not testable via Swagger<br>Spring managed only")
             @RequestParam(required = false)
             HashMap<String, Object> parameters
 
     ) throws Exception {
-        if (NumberUtils.isNumber(filter)) {
+        if (NumberUtils.isNumber(idOrLabel)) {
 
-            Long id = NumberUtils.createLong(filter);
+            Long id = NumberUtils.createLong(idOrLabel);
             BaseNode node = this.neo4j.get(id);
             if (node == null) throw new ObjectNotFoundException("id:" + id);
 
             return Collections.singletonList(node).stream().collect(Collectors.toSet());
         } else {
 
-            Set<BaseNode> nodes = this.neo4j.get(filter, unwind(parameters));
+            String label = idOrLabel;
+            Set<BaseNode> nodes = this.neo4j.get(label, unwind(parameters));
             if (nodes == null || nodes.isEmpty()) throw new ObjectNotFoundException(new ObjectMapper().writer().writeValueAsString(parameters));
             return nodes;
         }
