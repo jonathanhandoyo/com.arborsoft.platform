@@ -8,8 +8,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -57,6 +56,42 @@ public class NodeController {
         } else {
             Set<BaseNode> nodes = this.neo4j.get(filter, unwind(parameters));
             if (nodes == null || nodes.isEmpty()) throw new ObjectNotFoundException(new ObjectMapper().writer().writeValueAsString(parameters));
+            return nodes;
+        }
+    }
+
+    @ApiOperation(
+            value = "Get Node(s) by Parameter",
+            notes = "",
+            response = BaseNode.class,
+            responseContainer = "Set"
+    )
+    @RequestMapping(
+            value = "/{filter}",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public Set<BaseNode> get(
+            @ApiParam(name = "filter", required = true, value = "ID or Label")
+            @PathVariable
+            String filter,
+
+            @ApiParam(name = "key", required = true, value = "Key of the filter")
+            @RequestParam(required = false)
+            String key,
+
+            @ApiParam(name = "value", required = true, value = "Value of the filter")
+            @RequestParam(required = false)
+            String value
+    ) throws Exception {
+        if (NumberUtils.isNumber(filter)) {
+            Long id = NumberUtils.createLong(filter);
+            BaseNode node = this.neo4j.get(id);
+            if (node == null) throw new ObjectNotFoundException("id:" + id);
+            return Collections.singletonList(node).stream().collect(Collectors.toSet());
+        } else {
+            Set<BaseNode> nodes = this.neo4j.get(filter, Pair.of(key, value));
+            if (nodes == null || nodes.isEmpty()) throw new ObjectNotFoundException(new ObjectMapper().writer().writeValueAsString(Pair.of(key, value)));
             return nodes;
         }
     }
