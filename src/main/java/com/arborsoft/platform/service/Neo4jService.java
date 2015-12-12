@@ -96,6 +96,17 @@ public class Neo4jService {
         }
     }
 
+    public void delete(Label label) throws DatabaseOperationException {
+        try {
+            Assert.notNull(label, "Label is null");
+
+            this.engine.query("MATCH (n:" + label.name() + ") WITH n OPTIONAL MATCH (n) -[r]- () DELETE r, n;", null);
+        } catch (Exception exception) {
+            LOG.error(exception.getMessage(), exception);
+            throw new DatabaseOperationException(exception.getMessage(), exception);
+        }
+    }
+
     public BaseRelationship relate(BaseNode origin, BaseRelationship relationship, BaseNode target) throws DatabaseOperationException {
         try {
             Assert.notNull(origin, "Origin BaseNode is null");
@@ -210,15 +221,87 @@ public class Neo4jService {
         }
     }
 
+    public Set<String> getOutgoingRelationshipTypes(BaseNode node) throws DatabaseOperationException {
+        try {
+            Assert.notNull(node, "BaseNode is null");
+            Assert.notNull(node.getId(), "BaseNode.id is null");
 
+            Map<String, Object> param = new HashMap<>();
 
+            Execute query = CypherQuery
+                    .start(
+                            nodesById("node", node.getNode().getId()))
+                    .match(
+                            node("node").out().as("relationship").node())
+                    .returns(distinct(as(type(identifier("relationship")), "type")))
+                    ;
 
+            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(it -> (String) it.get("type")).collect(Collectors.toSet());
+        } catch (Exception exception) {
+            LOG.error(exception.getMessage(), exception);
+            throw new DatabaseOperationException(exception.getMessage(), exception);
+        }
+    }
 
+    public Set<String> getIncomingRelationshipTypes(BaseNode node) throws DatabaseOperationException {
+        try {
+            Assert.notNull(node, "BaseNode is null");
+            Assert.notNull(node.getId(), "BaseNode.id is null");
 
+            Map<String, Object> param = new HashMap<>();
 
+            Execute query = CypherQuery
+                    .start(
+                            nodesById("node", node.getNode().getId()))
+                    .match(
+                            node("node").in().as("relationship").node())
+                    .returns(distinct(as(type(identifier("relationship")), "type")))
+                    ;
 
+            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(it -> (String) it.get("type")).collect(Collectors.toSet());
+        } catch (Exception exception) {
+            LOG.error(exception.getMessage(), exception);
+            throw new DatabaseOperationException(exception.getMessage(), exception);
+        }
+    }
 
+    public Set<BaseRelationship> getOutgoing(BaseNode origin, String relationship, Pair<String, Object>... pairs) throws DatabaseOperationException {
+        try {
+            Assert.notNull(origin, "Origin BaseNode is null");
+            Assert.notNull(relationship, "Relationship is null");
 
+            Map<String, Object> param = new HashMap<>();
 
+            Execute query = CypherQuery
+                    .start(nodesById("origin", origin.getNode().getId()))
+                    .match(node("origin").out(relationship).values(toPropertyValues(param, pairs)).as("relationship").node("target"))
+                    .returns(identifier("relationship"))
+                    ;
 
+            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(BaseRelationship.converter("relationship")).collect(Collectors.toSet());
+        } catch (Exception exception) {
+            LOG.error(exception.getMessage(), exception);
+            throw new DatabaseOperationException(exception.getMessage(), exception);
+        }
+    }
+
+    public Set<BaseRelationship> getIncoming(BaseNode origin, String relationship, Pair<String, Object>... pairs) throws DatabaseOperationException {
+        try {
+            Assert.notNull(origin, "Origin BaseNode is null");
+            Assert.notNull(relationship, "Relationship is null");
+
+            Map<String, Object> param = new HashMap<>();
+
+            Execute query = CypherQuery
+                    .start(nodesById("origin", origin.getNode().getId()))
+                    .match(node("origin").in(relationship).values(toPropertyValues(param, pairs)).as("relationship").node("target"))
+                    .returns(identifier("relationship"))
+                    ;
+
+            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(BaseRelationship.converter("relationship")).collect(Collectors.toSet());
+        } catch (Exception exception) {
+            LOG.error(exception.getMessage(), exception);
+            throw new DatabaseOperationException(exception.getMessage(), exception);
+        }
+    }
 }
