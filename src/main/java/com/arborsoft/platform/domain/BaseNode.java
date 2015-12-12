@@ -24,10 +24,6 @@ public class BaseNode extends BaseDomain {
     }
 
     public BaseNode(Node node) {
-        this.with(node);
-    }
-
-    public void with(Node node) {
         Assert.notNull(node, "Shadow node is null");
 
         super.put("__id__", node.getId());

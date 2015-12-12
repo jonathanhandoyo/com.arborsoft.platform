@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 public class CustomCollection {
-    private static final Logger LOG = LoggerFactory.getLogger(CustomCollection.class);
-
     public static <K, V> Pair[] unwind(Map<K, V> map) {
         if (map != null && !map.isEmpty()) {
             List<Pair<K, V>> pairs = new ArrayList<>();
