@@ -10,6 +10,7 @@
     <modules>
         <module>core-neo4j</module>
         <module>api</module>
+        <module>web</module>
     </modules>
     <packaging>pom</packaging>
 
