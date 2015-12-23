@@ -4,10 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.arborsoft</groupId>
+    <groupId>com.arborsoft.platform</groupId>
     <artifactId>platform</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <modules>
+        <module>core-neo4j</module>
+        <module>api</module>
+    </modules>
+    <packaging>pom</packaging>
 
     <name>platform</name>
     <description>Platform</description>
@@ -19,23 +23,14 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <repositories>
-        <repository>
-            <id>neo4j-release-repository</id>
-            <url>http://m2.neo4j.org/content/repositories/releases/</url>
-        </repository>
-    </repositories>
-
     <properties>
         <java.version>1.8</java.version>
         <neo4j.version>2.1.8</neo4j.version>
         <neo4j.dsl.version>2.1.4</neo4j.dsl.version>
         <neo4j.rest.version>2.0.1</neo4j.rest.version>
         <lombok.version>1.16.6</lombok.version>
-
         <commons.lang.version>3.4</commons.lang.version>
         <commons.collections.version>4.0</commons.collections.version>
-        <guava.version>18.0</guava.version>
         <jackson.version>2.6.3</jackson.version>
         <junit.version>4.12</junit.version>
         <servlet.version>3.1.0</servlet.version>
@@ -44,42 +39,6 @@
     </properties>
 
     <dependencies>
-        <!-- neo4j -->
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-community</artifactId>
-            <version>${neo4j.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-access</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-rest-graphdb</artifactId>
-            <version>${neo4j.rest.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.neo4j</groupId>
-                    <artifactId>neo4j-kernel</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.neo4j</groupId>
-                    <artifactId>server-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-dsl</artifactId>
-            <version>${neo4j.dsl.version}</version>
-        </dependency>
 
         <!-- spring -->
         <dependency>
@@ -153,13 +112,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- google -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-
         <!-- apache-commons -->
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -171,50 +123,5 @@
             <artifactId>commons-collections4</artifactId>
             <version>${commons.collections.version}</version>
         </dependency>
-
-        <!-- servlet -->
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>${servlet.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- swagger -->
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>${swagger.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>${swagger.version}</version>
-        </dependency>
     </dependencies>
-
-    <build>
-        <finalName>com.arborsoft.platform</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <includes>
-                        <include>**/*Test.java</include>
-                    </includes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
