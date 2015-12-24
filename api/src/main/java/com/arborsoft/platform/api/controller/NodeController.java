@@ -141,7 +141,7 @@ public class NodeController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<Set<String>> getLabels() throws Exception {
-        Set<String> labels = this.neo4j.getLabels().stream().map(it -> it.name()).collect(Collectors.toSet());
+        Set<String> labels = this.neo4j.getLabels().stream().collect(Collectors.toSet());
         return new ResponseEntity<>(labels, HttpStatus.OK);
     }
 

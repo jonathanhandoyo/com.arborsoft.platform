@@ -21,6 +21,7 @@ public class CustomCypher {
         return null;
     }
 
+    @SafeVarargs
     public static PropertyValue[] toPropertyValues(Map<String, Object> param, Pair<String, Object>... pairs) {
         if (pairs.length > 0) {
             List<PropertyValue> values = new ArrayList<>();

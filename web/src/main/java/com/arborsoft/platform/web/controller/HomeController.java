@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.util.HashMap;
+import static com.arborsoft.platform.core.util.CustomMap.entry;
+import static com.arborsoft.platform.core.util.CustomMap.map;
 
 @Controller
 public class HomeController {
@@ -19,11 +20,7 @@ public class HomeController {
     public ModelAndView home(Authentication authentication) throws Exception {
         final User user = (User) authentication.getPrincipal();
 
-        return new ModelAndView("home", new HashMap<String, Object>(){
-            {
-                put("user", user);
-            }
-        });
+        return new ModelAndView("home", map(entry("user", user)));
     }
 
     @RequestMapping(

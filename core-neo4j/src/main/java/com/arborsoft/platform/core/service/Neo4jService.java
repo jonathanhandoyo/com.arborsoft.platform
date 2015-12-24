@@ -4,6 +4,8 @@ import com.arborsoft.platform.core.domain.BaseNode;
 import com.arborsoft.platform.core.domain.BaseRelationship;
 import com.arborsoft.platform.core.dto.RelationshipDTO;
 import com.arborsoft.platform.core.exception.DatabaseOperationException;
+import com.arborsoft.platform.core.util.CustomMap;
+import com.arborsoft.platform.core.util.CustomStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.cypherdsl.CypherQuery;
 import org.neo4j.cypherdsl.grammar.Execute;
@@ -26,6 +28,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static com.arborsoft.platform.core.util.CustomCypher.toPropertyValues;
+import static com.arborsoft.platform.core.util.CustomMap.*;
+import static com.arborsoft.platform.core.util.CustomMap.entry;
 import static org.neo4j.cypherdsl.CypherQuery.*;
 
 @Service
@@ -54,13 +58,13 @@ public class Neo4jService {
 
             Node _node = (node.getId() != null ? this.database.getNodeById(node.getId()) : null);
             if (_node == null) {
-                _node = this.database.createNode(node.getLabels().stream().map(it -> DynamicLabel.label(it)).toArray(Label[]::new));
+                _node = this.database.createNode(node.getLabels().stream().map(DynamicLabel::label).toArray(Label[]::new));
                 Assert.notNull(_node, "Unable to create node");
                 Assert.notNull(_node.getId(), "Unable to create node");
             }
 
             Set<String> existings = new HashSet<>();
-            _node.getPropertyKeys().forEach(it -> existings.add(it));
+            _node.getPropertyKeys().forEach(existings::add);
 
             for (String key: node.keySet()) {
                 _node.setProperty(key, node.get(key));
@@ -128,7 +132,8 @@ public class Neo4jService {
                     .returns(identifier("relationship"))
                     ;
 
-            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).findFirst().map(BaseRelationship.converter("relationship")).orElse(null);
+
+            return CustomStream.stream(this.engine.query(query.toString(), param)).findFirst().map(BaseRelationship.converter("relationship")).orElse(null);
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -140,14 +145,11 @@ public class Neo4jService {
             Assert.notNull(relationship, "Relationship is null");
             Assert.notNull(relationship.getId(), "Relationship.id is null");
 
-            Map<String, Object> param = new HashMap<>();
+            String query =
+                    " START r = rel({id}) " +
+                    "DELETE r;";
 
-            Execute query = CypherQuery
-                    .start(relationshipsById("relationship", relationship.getId()))
-                    .delete(identifier("relationship"))
-                    ;
-
-            this.engine.query(query.toString(), param);
+            this.engine.query(query, map(entry("id", relationship.getId())));
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -175,19 +177,39 @@ public class Neo4jService {
                     .match(node("node").label(label).values(toPropertyValues(param, pairs)))
                     .returns(identifier("node"));
 
-            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(BaseNode.converter("node")).collect(Collectors.toSet());
+            return CustomStream.stream(this.engine.query(query.toString(), param)).map(BaseNode.converter("node")).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
         }
     }
 
-    public Set<Label> getLabels() {
-        return this.database.getAllLabelNames().stream().map(it -> DynamicLabel.label(it)).collect(Collectors.toSet());
+    public Set<String> getLabels() throws DatabaseOperationException {
+        try {
+            String query =
+                    " MATCH (n) " +
+                    "  WITH DISTINCT labels(n) AS labels " +
+                    "UNWIND labels AS label " +
+                    "RETURN DISTINCT label " +
+                    " ORDER BY label;";
+            return CustomStream.stream(this.engine.query(query, null)).map(it -> (String) it.get("label")).collect(Collectors.toSet());
+        } catch (Exception exception) {
+            LOG.error(exception.getMessage(), exception);
+            throw new DatabaseOperationException(exception.getMessage(), exception);
+        }
     }
 
-    public Set<RelationshipType> getRelationshipTypes() {
-        return StreamSupport.stream(this.database.getRelationshipTypes().spliterator(), false).collect(Collectors.toSet());
+    public Set<String> getRelationshipTypes() throws DatabaseOperationException {
+        try {
+            String query =
+                    " MATCH () -[r]- () " +
+                    "RETURN DISTINCT type(r) AS relationship " +
+                    " ORDER BY relationship;";
+            return CustomStream.stream(this.engine.query(query, null)).map(it -> (String) it.get("relationship")).collect(Collectors.toSet());
+        } catch (Exception exception) {
+            LOG.error(exception.getMessage(), exception);
+            throw new DatabaseOperationException(exception.getMessage(), exception);
+        }
     }
 
     public Set<String> getKeys(Label label) throws DatabaseOperationException {
@@ -200,7 +222,7 @@ public class Neo4jService {
                     "   WITH key " +
                     "  WHERE NOT key =~ \"__.*\" " +
                     " RETURN DISTINCT key;";
-            return StreamSupport.stream(this.engine.query(query, null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
+            return CustomStream.stream(this.engine.query(query, null)).map(it -> (String) it.get("key")).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -216,8 +238,8 @@ public class Neo4jService {
                     " UNWIND keys(r) AS key " +
                     "   WITH key " +
                     "  WHERE NOT key =~ \"__.*\" " +
-                    " RETURN DISTINCY key;";
-            return StreamSupport.stream(this.engine.query(query, null).spliterator(), false).map(it -> (String) it.get("key")).collect(Collectors.toSet());
+                    " RETURN DISTINCT key;";
+            return CustomStream.stream(this.engine.query(query, null)).map(it -> (String) it.get("key")).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -241,7 +263,7 @@ public class Neo4jService {
 
             param.put("id", node.getId());
 
-            return StreamSupport.stream(this.engine.query(query, param).spliterator(), false).map(it -> new RelationshipDTO(RelationshipDTO.Direction.OUT, it)).collect(Collectors.toSet());
+            return CustomStream.stream(this.engine.query(query, null)).map(it -> new RelationshipDTO(RelationshipDTO.Direction.OUT, it)).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -265,7 +287,7 @@ public class Neo4jService {
 
             param.put("id", node.getId());
 
-            return StreamSupport.stream(this.engine.query(query, param).spliterator(), false).map(it -> new RelationshipDTO(RelationshipDTO.Direction.IN, it)).collect(Collectors.toSet());
+            return CustomStream.stream(this.engine.query(query, null)).map(it -> new RelationshipDTO(RelationshipDTO.Direction.IN, it)).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -289,7 +311,7 @@ public class Neo4jService {
 
             ((Return) query).returns(identifier("relationship"));
 
-            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(BaseRelationship.converter("relationship")).collect(Collectors.toSet());
+            return CustomStream.stream(this.engine.query(query.toString(), null)).map(BaseRelationship.converter("relationship")).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -309,7 +331,7 @@ public class Neo4jService {
                     .returns(identifier("relationship"))
                     ;
 
-            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(BaseRelationship.converter("relationship")).collect(Collectors.toSet());
+            return CustomStream.stream(this.engine.query(query.toString(), null)).map(BaseRelationship.converter("relationship")).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);

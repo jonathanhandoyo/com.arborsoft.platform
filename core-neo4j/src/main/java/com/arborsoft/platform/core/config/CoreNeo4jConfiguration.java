@@ -1,30 +1,35 @@
 package com.arborsoft.platform.core.config;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 import org.neo4j.rest.graphdb.query.RestCypherQueryEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 @Configuration
 @ComponentScan(basePackages = {"com.arborsoft.platform.core"})
 public class CoreNeo4jConfiguration {
-    private static final Logger LOG = LoggerFactory.getLogger(CoreNeo4jConfiguration.class);
+    private static final Log LOG = LogFactory.getLog(CoreNeo4jConfiguration.class);
 
     private RestGraphDatabase database;
     private RestCypherQueryEngine engine;
 
+    @Autowired
+    Environment env;
+
     @Bean
     public RestGraphDatabase database() {
-        //String uri = "http://platform.sb02.stations.graphenedb.com:24789/db/data/";
-        String uri = "http://10.80.46.243:7474/db/data/";
-        String username = null;
-        String password = null;
+        this.database = new RestGraphDatabase(
+                this.env.getProperty("neo4j.url", "http://localhost:7474/db/data/"),
+                this.env.getProperty("neo4j.username", (String) null),
+                this.env.getProperty("neo4j.password", (String) null)
+        );
 
-        LOG.info(">> neo4j graph database @ " + uri);
-        this.database = new RestGraphDatabase(uri, username, password);
+        LOG.info(">> neo4j graph database @ " + this.database.getRestAPI().getBaseUri());
         return this.database;
     }
 
@@ -33,6 +38,7 @@ public class CoreNeo4jConfiguration {
         if (this.engine == null) {
             this.engine = new RestCypherQueryEngine(this.database.getRestAPI());
         }
+
         LOG.info(">> neo4j cypher engine");
         return this.engine;
     }

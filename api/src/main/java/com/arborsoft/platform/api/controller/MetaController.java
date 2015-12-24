@@ -33,7 +33,7 @@ public class MetaController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public Set<String> labels() throws Exception {
-        return this.neo4j.getLabels().stream().map(it -> it.name()).collect(Collectors.toSet());
+        return this.neo4j.getLabels().stream().collect(Collectors.toSet());
     }
 
     @ApiOperation(
@@ -48,6 +48,6 @@ public class MetaController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public Set<String> relationships() throws Exception {
-        return this.neo4j.getRelationshipTypes().stream().map(it -> it.name()).collect(Collectors.toSet());
+        return this.neo4j.getRelationshipTypes().stream().collect(Collectors.toSet());
     }
 }
