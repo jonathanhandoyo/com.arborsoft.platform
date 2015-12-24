@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
@@ -30,39 +31,25 @@ public class CustomExceptionHandler {
         return new ResponseEntity<>(this.map(request, throwable, true), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @ExceptionHandler(DatabaseOperationException.class)
+    @ExceptionHandler(value = {
+            DatabaseOperationException.class
+    })
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
-    public ResponseEntity<?> handle(HttpServletRequest request, DatabaseOperationException exception) {
+    public ResponseEntity<?> handleWithStackFrames(HttpServletRequest request, DatabaseOperationException exception) {
         return new ResponseEntity<>(this.map(request, exception, true), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @ExceptionHandler(NoHandlerFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ResponseBody
-    public ResponseEntity<?> handle(HttpServletRequest request, NoHandlerFoundException exception) {
-        return new ResponseEntity<>(this.map(request, exception, true), HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(NullPointerException.class)
+    @ExceptionHandler(value = {
+            NoHandlerFoundException.class,
+            ClassCastException.class,
+            IllegalArgumentException.class,
+            NullPointerException.class
+    })
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
-    public ResponseEntity<?> handle(HttpServletRequest request, NullPointerException exception) {
-        return new ResponseEntity<>(this.map(request, exception, true), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ResponseBody
-    public ResponseEntity<?> handle(HttpServletRequest request, IllegalArgumentException exception) {
-        return new ResponseEntity<>(this.map(request, exception, true), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @ExceptionHandler(ClassCastException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ResponseBody
-    public ResponseEntity<?> handle(HttpServletRequest request, ClassCastException exception) {
-        return new ResponseEntity<>(this.map(request, exception, true), HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<?> handleWithoutStackFrames(HttpServletRequest request, DatabaseOperationException exception) {
+        return new ResponseEntity<>(this.map(request, exception, false), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private Map<String, Object> map(HttpServletRequest request, Throwable throwable, boolean withStackFrames) {

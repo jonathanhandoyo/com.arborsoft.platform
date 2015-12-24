@@ -4,6 +4,3 @@ target
 
 # files
 *.iml
-
-/web/*.iml
-*.iml

@@ -2,11 +2,13 @@ package com.arborsoft.platform.core.service;
 
 import com.arborsoft.platform.core.domain.BaseNode;
 import com.arborsoft.platform.core.domain.BaseRelationship;
+import com.arborsoft.platform.core.dto.RelationshipDTO;
 import com.arborsoft.platform.core.exception.DatabaseOperationException;
-import com.arborsoft.platform.core.util.CustomCypher;
 import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.cypherdsl.CypherQuery;
 import org.neo4j.cypherdsl.grammar.Execute;
+import org.neo4j.cypherdsl.grammar.Match;
+import org.neo4j.cypherdsl.grammar.Return;
 import org.neo4j.graphdb.*;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 import org.neo4j.rest.graphdb.query.RestCypherQueryEngine;
@@ -170,7 +172,7 @@ public class Neo4jService {
             Map<String, Object> param = new HashMap<>();
 
             Execute query = CypherQuery
-                    .match(node("node").label(label).values(CustomCypher.toPropertyValues(param, pairs)))
+                    .match(node("node").label(label).values(toPropertyValues(param, pairs)))
                     .returns(identifier("node"));
 
             return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(BaseNode.converter("node")).collect(Collectors.toSet());
@@ -207,7 +209,7 @@ public class Neo4jService {
 
     public Set<String> getKeys(RelationshipType type) throws DatabaseOperationException {
         try {
-            Assert.notNull(type, "Label is null");
+            Assert.notNull(type, "RelationshipType is null");
 
             String query =
                     "  MATCH () -[r:" + type.name() + "]- () " +
@@ -222,44 +224,48 @@ public class Neo4jService {
         }
     }
 
-    public Set<String> getOutgoingRelationshipTypes(BaseNode node) throws DatabaseOperationException {
+    public Set<RelationshipDTO> getOutgoingRelationshipTypes(BaseNode node) throws DatabaseOperationException {
         try {
             Assert.notNull(node, "BaseNode is null");
             Assert.notNull(node.getId(), "BaseNode.id is null");
 
             Map<String, Object> param = new HashMap<>();
 
-            Execute query = CypherQuery
-                    .start(
-                            nodesById("node", node.getNode().getId()))
-                    .match(
-                            node("node").out().as("relationship").node())
-                    .returns(distinct(as(type(identifier("relationship")), "type")))
-                    ;
+            String query =
+                    " START n = node({id}) " +
+                    " MATCH (n) -[r]-> (m) " +
+                    "UNWIND labels(m) AS label " +
+                    "  WITH type(r) AS type, label " +
+                    " WHERE label <> 'BaseNode' " +
+                    "RETURN DISTINCT type, label;";
 
-            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(it -> (String) it.get("type")).collect(Collectors.toSet());
+            param.put("id", node.getId());
+
+            return StreamSupport.stream(this.engine.query(query, param).spliterator(), false).map(it -> new RelationshipDTO(RelationshipDTO.Direction.OUT, it)).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
         }
     }
 
-    public Set<String> getIncomingRelationshipTypes(BaseNode node) throws DatabaseOperationException {
+    public Set<RelationshipDTO> getIncomingRelationshipTypes(BaseNode node) throws DatabaseOperationException {
         try {
             Assert.notNull(node, "BaseNode is null");
             Assert.notNull(node.getId(), "BaseNode.id is null");
 
             Map<String, Object> param = new HashMap<>();
 
-            Execute query = CypherQuery
-                    .start(
-                            nodesById("node", node.getNode().getId()))
-                    .match(
-                            node("node").in().as("relationship").node())
-                    .returns(distinct(as(type(identifier("relationship")), "type")))
-                    ;
+            String query =
+                    " START n = node({id}) " +
+                    " MATCH (n) <-[r]- (m) " +
+                    "UNWIND labels(m) AS label " +
+                    "  WITH type(r) AS type, label " +
+                    " WHERE label <> \"BaseNode\" " +
+                    "RETURN DISTINCT type, label;";
 
-            return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(it -> (String) it.get("type")).collect(Collectors.toSet());
+            param.put("id", node.getId());
+
+            return StreamSupport.stream(this.engine.query(query, param).spliterator(), false).map(it -> new RelationshipDTO(RelationshipDTO.Direction.IN, it)).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -273,11 +279,15 @@ public class Neo4jService {
 
             Map<String, Object> param = new HashMap<>();
 
-            Execute query = CypherQuery
-                    .start(nodesById("origin", origin.getNode().getId()))
-                    .match(node("origin").out(relationship).values(CustomCypher.toPropertyValues(param, pairs)).as("relationship").node("target"))
-                    .returns(identifier("relationship"))
-                    ;
+            Execute query = CypherQuery.start(nodesById("origin", origin.getNode().getId()));
+
+            if (pairs != null && pairs.length > 0) {
+                ((Match) query).match(node("origin").out(relationship).values(toPropertyValues(param, pairs)).as("relationship").node("target"));
+            } else {
+                ((Match) query).match(node("origin").out(relationship).as("relationship").node("target"));
+            }
+
+            ((Return) query).returns(identifier("relationship"));
 
             return StreamSupport.stream(this.engine.query(query.toString(), param).spliterator(), false).map(BaseRelationship.converter("relationship")).collect(Collectors.toSet());
         } catch (Exception exception) {
@@ -295,7 +305,7 @@ public class Neo4jService {
 
             Execute query = CypherQuery
                     .start(nodesById("origin", origin.getNode().getId()))
-                    .match(node("origin").in(relationship).values(CustomCypher.toPropertyValues(param, pairs)).as("relationship").node("target"))
+                    .match(node("origin").in(relationship).values(toPropertyValues(param, pairs)).as("relationship").node("target"))
                     .returns(identifier("relationship"))
                     ;
 

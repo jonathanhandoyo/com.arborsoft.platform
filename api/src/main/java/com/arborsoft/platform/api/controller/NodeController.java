@@ -2,11 +2,12 @@ package com.arborsoft.platform.api.controller;
 
 import com.arborsoft.platform.core.domain.BaseNode;
 import com.arborsoft.platform.core.domain.BaseRelationship;
+import com.arborsoft.platform.core.dto.RelationshipDTO;
 import com.arborsoft.platform.core.service.Neo4jService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.graphdb.DynamicLabel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,22 +16,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.arborsoft.platform.core.util.CustomCollection.unwind;
 
-@Api(value = "Node Controller")
 @RestController
 @RequestMapping("/rest")
 @ResponseBody
 public class NodeController {
-
-    public enum Direction {
-        IN, OUT;
-    }
 
     @Autowired
     protected Neo4jService neo4j;
@@ -155,13 +151,13 @@ public class NodeController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Map<String, Set<String>>> getRelationships(@PathVariable Long id) throws Exception {
+    public ResponseEntity<Set<RelationshipDTO>> getRelationships(@PathVariable Long id) throws Exception {
         BaseNode node = this.neo4j.get(id);
 
-        Map<String, Set<String>> result = new HashMap<>();
-        result.put("IN", this.neo4j.getIncomingRelationshipTypes(node));
-        result.put("OUT", this.neo4j.getOutgoingRelationshipTypes(node));
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return new ResponseEntity<>(Stream.concat(
+                this.neo4j.getIncomingRelationshipTypes(node).stream(),
+                this.neo4j.getOutgoingRelationshipTypes(node).stream()
+        ).sorted(RelationshipDTO::compareTo).collect(Collectors.toSet()), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Traverse Relationship", responseContainer = "Set")
@@ -170,13 +166,13 @@ public class NodeController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Set<BaseRelationship>> getRelationships(@PathVariable Long id, @PathVariable Direction direction, @PathVariable String type, @RequestParam(required = false) String json) throws Exception {
+    public ResponseEntity<Set<BaseRelationship>> getRelationships(@PathVariable Long id, @PathVariable RelationshipDTO.Direction direction, @PathVariable String type, @RequestParam(required = false) String json) throws Exception {
         BaseNode node = this.neo4j.get(id);
 
-        Map<String, Object> map = new ObjectMapper().readerFor(new TypeReference<Map<String, Object>>() {}).readValue(json);
-
-        if (Direction.OUT.equals(direction)) return new ResponseEntity<>(this.neo4j.getOutgoing(node, type, unwind(map)), HttpStatus.OK);
-        if (Direction.IN.equals(direction)) return new ResponseEntity<>(this.neo4j.getIncoming(node, type, unwind(map)), HttpStatus.OK);
+        Map<String, Object> map = null;
+        if (StringUtils.isNotBlank(json)) {
+            map = new ObjectMapper().readerFor(new TypeReference<Map<String, Object>>() {}).readValue(json);
+        }
 
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
