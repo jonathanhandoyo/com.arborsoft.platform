@@ -3,6 +3,7 @@ package com.arborsoft.platform.core.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.graphdb.Node;
 import org.springframework.util.Assert;
 
@@ -18,9 +19,11 @@ public class BaseNode extends BaseDomain {
     @JsonIgnore
     protected Node node;
 
-    public BaseNode() {
+    public BaseNode(String label) {
+        Assert.state(StringUtils.isNotBlank(label));
+
         super.put("__labels__", new TreeSet<>());
-        this.addLabel("BaseNode");
+        this.addLabel(label);
     }
 
     public BaseNode(Node node) {

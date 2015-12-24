@@ -75,12 +75,12 @@ public class NodeController {
             node = this.neo4j.get(id);
 
             if (node == null) {
-                node = new BaseNode();
+                node = new BaseNode(label);
                 body.remove("__id__");
             }
         }
 
-        node = (node == null) ? new BaseNode() : node;
+        node = (node == null) ? new BaseNode(label) : node;
         node = this.copy(node, body, true);
 
         node.addLabel(label);
