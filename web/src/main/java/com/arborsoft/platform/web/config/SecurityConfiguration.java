@@ -62,7 +62,6 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 }
             })
             .authorizeRequests()
-            .antMatchers("/**").authenticated()
             .antMatchers(
                 "**/assets/css/**",
                 "**/assets/js/**",
@@ -70,7 +69,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 "/login",
                 "/logout"
             ).permitAll()
-            //.anyRequest().permitAll()
+            .anyRequest().authenticated()
             .and()
             .formLogin()
                 .loginPage("/login")
