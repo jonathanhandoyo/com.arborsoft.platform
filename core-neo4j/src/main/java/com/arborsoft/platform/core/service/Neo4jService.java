@@ -169,13 +169,19 @@ public class Neo4jService {
     public Set<BaseNode> get(String label, Pair<String, Object>... pairs) throws DatabaseOperationException {
         try {
             Assert.notNull(label, "Label is null");
-            Assert.notEmpty(pairs, "Properties are null");
+//            Assert.notEmpty(pairs, "Properties are null");
 
             Map<String, Object> param = new HashMap<>();
 
-            Execute query = CypherQuery
-                    .match(node("node").label(label).values(toPropertyValues(param, pairs)))
-                    .returns(identifier("node"));
+            Execute query;
+
+            if (pairs != null && pairs.length > 0) {
+                query = CypherQuery.match(node("node").label(label).values(toPropertyValues(param, pairs)));
+            } else {
+                query = CypherQuery.match(node("node").label(label));
+            }
+
+            ((Return) query).returns(identifier("node"));
 
             return CustomStream.stream(this.engine.query(query.toString(), param)).map(BaseNode.converter("node")).collect(Collectors.toSet());
         } catch (Exception exception) {
@@ -251,8 +257,6 @@ public class Neo4jService {
             Assert.notNull(node, "BaseNode is null");
             Assert.notNull(node.getId(), "BaseNode.id is null");
 
-            Map<String, Object> param = new HashMap<>();
-
             String query =
                     " START n = node({id}) " +
                     " MATCH (n) -[r]-> (m) " +
@@ -261,9 +265,7 @@ public class Neo4jService {
                     " WHERE label <> 'BaseNode' " +
                     "RETURN DISTINCT type, label;";
 
-            param.put("id", node.getId());
-
-            return CustomStream.stream(this.engine.query(query, null)).map(it -> new RelationshipDTO(RelationshipDTO.Direction.OUT, it)).collect(Collectors.toSet());
+            return CustomStream.stream(this.engine.query(query, map(entry("id", node.getId())))).map(it -> new RelationshipDTO(RelationshipDTO.Direction.OUT, it)).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);
@@ -275,8 +277,6 @@ public class Neo4jService {
             Assert.notNull(node, "BaseNode is null");
             Assert.notNull(node.getId(), "BaseNode.id is null");
 
-            Map<String, Object> param = new HashMap<>();
-
             String query =
                     " START n = node({id}) " +
                     " MATCH (n) <-[r]- (m) " +
@@ -285,9 +285,7 @@ public class Neo4jService {
                     " WHERE label <> \"BaseNode\" " +
                     "RETURN DISTINCT type, label;";
 
-            param.put("id", node.getId());
-
-            return CustomStream.stream(this.engine.query(query, null)).map(it -> new RelationshipDTO(RelationshipDTO.Direction.IN, it)).collect(Collectors.toSet());
+            return CustomStream.stream(this.engine.query(query, map(entry("id", node.getId())))).map(it -> new RelationshipDTO(RelationshipDTO.Direction.IN, it)).collect(Collectors.toSet());
         } catch (Exception exception) {
             LOG.error(exception.getMessage(), exception);
             throw new DatabaseOperationException(exception.getMessage(), exception);

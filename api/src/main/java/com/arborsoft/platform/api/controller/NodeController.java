@@ -51,7 +51,7 @@ public class NodeController {
     )
     public ResponseEntity<BaseNode> put(@PathVariable Long id, @RequestBody Map<String, Object> body) throws Exception {
         BaseNode node = this.neo4j.get(id);
-        if (node == null) return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+        if (node == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         this.copy(node, body, false);
 
@@ -95,6 +95,7 @@ public class NodeController {
     )
     public ResponseEntity<Void> delete(@PathVariable Long id) throws Exception {
         BaseNode node = this.neo4j.get(id);
+        if (node == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         this.neo4j.delete(node);
         return new ResponseEntity<>(HttpStatus.OK);
@@ -116,10 +117,13 @@ public class NodeController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Set<BaseNode>> getByCriteria(@PathVariable String label, @RequestParam(required = false) String json) throws Exception {
-        Map<String, Object> map = new ObjectMapper().readerFor(new TypeReference<Map<String, Object>>() {}).readValue(json);
+    public ResponseEntity<Set<BaseNode>> getByCriteria(@PathVariable String label, @RequestBody(required = false) Map<String, Object> criteria) throws Exception {
+//        Map<String, Object> map = null;
+//        if (StringUtils.isNotBlank(json)) {
+//            map = new ObjectMapper().readerFor(new TypeReference<Map<String, Object>>() {}).readValue(json);
+//        }
 
-        Set<BaseNode> nodes = this.neo4j.get(label, unwind(map));
+        Set<BaseNode> nodes = this.neo4j.get(label, unwind(criteria));
         return new ResponseEntity<>(nodes, HttpStatus.OK);
     }
 
@@ -153,6 +157,7 @@ public class NodeController {
     )
     public ResponseEntity<Set<RelationshipDTO>> getRelationships(@PathVariable Long id) throws Exception {
         BaseNode node = this.neo4j.get(id);
+        if (node == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         return new ResponseEntity<>(Stream.concat(
                 this.neo4j.getIncomingRelationshipTypes(node).stream(),
@@ -168,13 +173,27 @@ public class NodeController {
     )
     public ResponseEntity<Set<BaseRelationship>> getRelationships(@PathVariable Long id, @PathVariable RelationshipDTO.Direction direction, @PathVariable String type, @RequestParam(required = false) String json) throws Exception {
         BaseNode node = this.neo4j.get(id);
+        if (node == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         Map<String, Object> map = null;
         if (StringUtils.isNotBlank(json)) {
             map = new ObjectMapper().readerFor(new TypeReference<Map<String, Object>>() {}).readValue(json);
         }
 
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        Set<BaseRelationship> result;
+        switch (direction) {
+            case IN: {
+                result = this.neo4j.getIncoming(node, type, unwind(map));
+                return result.isEmpty() ? ResponseEntity.ok(null) : ResponseEntity.ok(result);
+            }
+            case OUT: {
+                result = this.neo4j.getIncoming(node, type, unwind(map));
+                return result.isEmpty() ? ResponseEntity.ok(null) : ResponseEntity.ok(result);
+            }
+            default: {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+        }
     }
 
     private BaseNode copy(BaseNode node, Map<String, Object> map, boolean wipe) {
