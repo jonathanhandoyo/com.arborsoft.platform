@@ -2,8 +2,8 @@ package com.arborsoft.platform.web.config;
 
 import com.arborsoft.platform.core.config.CoreNeo4jConfiguration;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +21,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 @EnableWebMvc
 @EnableAutoConfiguration
 public class WebConfiguration extends WebMvcConfigurerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(WebConfiguration.class);
+    private static final Log LOG = LogFactory.getLog(WebConfiguration.class);
 
     @Getter
     @Value(value = "${app.title}")

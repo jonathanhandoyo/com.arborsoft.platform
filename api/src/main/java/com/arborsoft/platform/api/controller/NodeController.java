@@ -37,9 +37,8 @@ public class NodeController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<BaseNode> get(@PathVariable Long id) throws Exception {
-        BaseNode node = this.neo4j.get(id);
-        return new ResponseEntity<>(node, HttpStatus.OK);
+    public ResponseEntity<?> get(@PathVariable Long id) throws Exception {
+        return new ResponseEntity<>(this.neo4j.get(id), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Update Node by ID")
@@ -61,7 +60,7 @@ public class NodeController {
 
     @ApiOperation(value = "Create Node with Label")
     @RequestMapping(
-            value = "/{label}:",
+            value = "/:{label}",
             method = RequestMethod.POST,
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
@@ -103,7 +102,7 @@ public class NodeController {
 
     @ApiOperation(value = "Delete Nodes by Label")
     @RequestMapping(
-            value = "/{label}:",
+            value = "/:{label}",
             method = RequestMethod.DELETE
     )
     public ResponseEntity<Void> delete(@PathVariable String label) throws Exception {
@@ -113,23 +112,18 @@ public class NodeController {
 
     @ApiOperation(value = "Get Nodes by Label & Criteria", responseContainer = "Set")
     @RequestMapping(
-            value = "/{label}:",
+            value = "/:{label}",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<Set<BaseNode>> getByCriteria(@PathVariable String label, @RequestBody(required = false) Map<String, Object> criteria) throws Exception {
-//        Map<String, Object> map = null;
-//        if (StringUtils.isNotBlank(json)) {
-//            map = new ObjectMapper().readerFor(new TypeReference<Map<String, Object>>() {}).readValue(json);
-//        }
-
         Set<BaseNode> nodes = this.neo4j.get(label, unwind(criteria));
         return new ResponseEntity<>(nodes, HttpStatus.OK);
     }
 
     @ApiOperation(value = "Get Keys by Label", responseContainer = "Set")
     @RequestMapping(
-            value = "/{label}:/keys",
+            value = "/:{label}/keys",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE
     )

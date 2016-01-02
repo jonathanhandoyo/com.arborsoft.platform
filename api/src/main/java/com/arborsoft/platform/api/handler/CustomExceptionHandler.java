@@ -2,8 +2,8 @@ package com.arborsoft.platform.api.handler;
 
 import com.arborsoft.platform.core.exception.DatabaseOperationException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.NoHandlerFoundException;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
@@ -22,7 +21,7 @@ import java.util.Map;
 @ControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class CustomExceptionHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(CustomExceptionHandler.class);
+    private static final Log LOG = LogFactory.getLog(CustomExceptionHandler.class);
 
     @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

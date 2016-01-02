@@ -4,9 +4,10 @@ import com.arborsoft.platform.core.domain.BaseNode;
 import com.arborsoft.platform.core.domain.BaseRelationship;
 import com.arborsoft.platform.core.dto.RelationshipDTO;
 import com.arborsoft.platform.core.exception.DatabaseOperationException;
-import com.arborsoft.platform.core.util.CustomMap;
 import com.arborsoft.platform.core.util.CustomStream;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.neo4j.cypherdsl.CypherQuery;
 import org.neo4j.cypherdsl.grammar.Execute;
 import org.neo4j.cypherdsl.grammar.Match;
@@ -14,8 +15,6 @@ import org.neo4j.cypherdsl.grammar.Return;
 import org.neo4j.graphdb.*;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 import org.neo4j.rest.graphdb.query.RestCypherQueryEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -25,7 +24,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static com.arborsoft.platform.core.util.CustomCypher.toPropertyValues;
 import static com.arborsoft.platform.core.util.CustomMap.*;
@@ -34,7 +32,7 @@ import static org.neo4j.cypherdsl.CypherQuery.*;
 
 @Service
 public class Neo4jService {
-    private static final Logger LOG = LoggerFactory.getLogger(Neo4jService.class);
+    private static final Log LOG = LogFactory.getLog(Neo4jService.class);
 
     @Autowired
     private RestGraphDatabase database;

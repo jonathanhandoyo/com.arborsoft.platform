@@ -1,7 +1,7 @@
 package com.arborsoft.platform.core.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 public class CustomReflector {
-    private static final Logger LOG = LoggerFactory.getLogger(CustomReflector.class);
+    private static final Log LOG = LogFactory.getLog(CustomReflector.class);
 
     public static List<Field> getFields(Class<?> _class) {
         Class<?> current = _class;

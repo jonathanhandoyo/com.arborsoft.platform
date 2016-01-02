@@ -1,15 +1,17 @@
 package com.arborsoft.platform.api.config;
 
+import com.arborsoft.platform.api.handler.ResponseTimeLoggingInterceptor;
 import com.arborsoft.platform.core.config.CoreNeo4jConfiguration;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import springfox.documentation.service.ApiInfo;
@@ -23,7 +25,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableSwagger2
 @EnableWebMvc
 public class ApiConfiguration extends WebMvcConfigurerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(ApiConfiguration.class);
+    private static final Log LOG = LogFactory.getLog(ApiConfiguration.class);
 
     @Getter
     @Value(value = "${app.title}")
@@ -60,6 +62,11 @@ public class ApiConfiguration extends WebMvcConfigurerAdapter {
 
         registry.addResourceHandler("/webjars/**")
                 .addResourceLocations("classpath:/META-INF/resources/webjars/");
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new ResponseTimeLoggingInterceptor()).addPathPatterns("/rest/**");
     }
 
     @Bean
